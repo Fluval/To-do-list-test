@@ -6,6 +6,7 @@ from django.urls import resolve
 from django.http import HttpRequest
 from lists.models import Item
 
+
 class HomePageTest(TestCase):
     '''тест на токсичность'''
 
@@ -14,9 +15,9 @@ class HomePageTest(TestCase):
         response = self.client.get('/')
         html = response.content.decode('utf-8')
         self.assertTrue(html.startswith('<html>'))
-        self.assertIn('<title>To-Do list</title>',html)
+        self.assertIn('<title>To-Do list</title>', html)
         self.assertTrue(html.strip().endswith('</html>'))
-        self.assertTemplateUsed(response,'home.html')
+        self.assertTemplateUsed(response, 'home.html')
 
     def test_uses_home_template(self):
         '''тест используется домашним шаблоном'''
@@ -25,9 +26,30 @@ class HomePageTest(TestCase):
 
     def test_can_save_a_POST_requests(self):
         '''тест: можно сохранить post-запрос'''
-        response = self.client.post('/',data={'item_text': 'A new list item'})
-        self.assertIn('A new list item', response.content.decode())
-        self.assertTemplateUsed(response,'home.html')
+        response = self.client.post('/', data={'item_text': 'A new list item'})
+        self.assertEqual(Item.objects.count(), 1)
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, 'A new list item')
+
+    def test_redirect_after_POST(self):
+        '''тест: переадресует после post-запроса'''
+        response = self.client.post('/', data={'item_text': 'A new list item'})
+        self.assertEqual(response.status_code,302)
+        self.assertEqual(response['location'],'/')
+
+    def test_only_saves_items_when_necessary(self):
+        '''тест: сохраняет элементы, только когда нужно'''
+        self.client.get('/')
+        self.assertEqual(Item.objects.count(),0)
+
+    def test_displays_all_list_items(self):
+        '''тест: отображение всех элементов списка'''
+        Item.objects.create(text='itemey 1')
+        Item.objects.create(text= 'itemey 2')
+        response = self.client.get('/')
+
+        self.assertIn('itemey 1', response.content.decode())
+        self.assertIn('itemey 2', response.content.decode())
 
 class ItemModelTest(TestCase):
     '''тест модели элемента списка'''
@@ -43,7 +65,7 @@ class ItemModelTest(TestCase):
         second_item.save()
 
         saved_items = Item.objects.all()
-        self.assertEqual(saved_items.count(),2)
+        self.assertEqual(saved_items.count(), 2)
 
         first_saved_item = saved_items[0]
         second_saved_item = saved_items[1]
