@@ -1,4 +1,6 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
+#!/usr/bin/env python3.6
+
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys 
 import unittest
@@ -8,6 +10,12 @@ class NewVisitorTest(unittest.TestCase):
     '''тест нового посетителя'''
     def setUp(self):
         self.browser = webdriver.Firefox()
+
+    def check_for_row_list_table(self, row_text):
+        '''подтвержжение строки в таблице списка'''
+        table = self.browser.find_element_by_id('id_list_table')
+        rows = table.find_elements_by_tag_name('tr')
+        self.assertIn(row_text,[row.text for row in rows])
 
     def tearDown(self):
         self.browser.quit()
@@ -22,11 +30,15 @@ class NewVisitorTest(unittest.TestCase):
         self.assertEqual(inputbox.get_attribute('placeholder'),'Enter a to-do item')
         inputbox.send_keys('Купить павлиньи перья')
         inputbox.send_keys(Keys.ENTER)
-        time.sleep(1)
+        time.sleep(10)
+        self.check_for_row_list_table('1: Купить павлиньи перья')
 
-        table = self.browser.find_element_by_id('id_list_table')
-        rows = table.find_element_by_tag_name('tr')
-        self.assertTrue(any(row.text =='1: Купить павлиньи перья' for row in rows),"Новый элемент списка не появился в таблице")        
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Сделать мушку из павлиньих перьев')
+        inputbox.send_keys(Keys.ENTER)
+        time.sleep(1)
+        self.check_for_row_list_table('1: Купить павлиньи перья')
+        self.check_for_row_list_table('2: Сделать мушку из павлиньих перьев')
         self.fail('Закончить тест')
 
 if __name__ == '__main__':
